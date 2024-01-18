@@ -483,6 +483,8 @@ tasks.register('releaseTestCloud', Exec) {
     dependsOn 'assemblePlayRelease'
 }
 
-task newModule(type: com.duckduckgo.gradle.ModuleCreator) {
-    feature = project.hasProperty('feature') ? project.getProperty('feature') : null
+tasks.register('newModule', com.duckduckgo.gradle.ModuleCreator) {
+    feature = project.findProperty('feature')
+    rootDir = project.rootDir
+    projectDir = project.projectDir
 }

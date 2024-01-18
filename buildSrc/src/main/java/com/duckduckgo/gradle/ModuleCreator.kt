@@ -37,6 +37,12 @@ abstract class ModuleCreator : DefaultTask() {
     @get:Input
     abstract val feature: Property<String>
 
+    @get:Input
+    abstract val rootDir: Property<File>
+
+    @get:Input
+    abstract val projectDir: Property<File>
+
     @TaskAction
     fun performAction() {
         val featureName = feature.orNull?.trim() ?: throw GradleException(ERROR_MESSAGE_MISSING_FEATURE.trim())
@@ -44,7 +50,7 @@ abstract class ModuleCreator : DefaultTask() {
 
         val (feature, moduleType) = extractFeatureAndModuleType(featureName)
 
-        val newFeatureDestination = File(project.rootDir, feature)
+        val newFeatureDestination = File(rootDir.get(), feature)
         val newModuleDestination = File(newFeatureDestination, "${feature}-${moduleType.destinationDirectorySuffix()}")
 
         newModuleDestination.ensureModuleDoesNotExist()
@@ -56,7 +62,7 @@ abstract class ModuleCreator : DefaultTask() {
 
         with(IntermoduleDependencyManager()) {
             wireUpIntermoduleDependencies(newFeatureDestination)
-            wireUpAppModule(feature, moduleType, File(project.projectDir, ModuleCreator.BUILD_GRADLE))
+            wireUpAppModule(feature, moduleType, File(projectDir.get(), BUILD_GRADLE))
         }
     }
 
@@ -70,15 +76,17 @@ abstract class ModuleCreator : DefaultTask() {
     }
 
     private fun copyTopLevelExampleFiles(newFeatureDestination: File) {
-        getExampleDir().listFiles()?.filter { it.isFile }?.forEach {
-            if (!File(newFeatureDestination, it.name).exists()) {
-                it.copyTo(File(newFeatureDestination, it.name))
+        getExampleDir().listFiles()
+            ?.filter { it.isFile }
+            ?.forEach {
+                if (!File(newFeatureDestination, it.name).exists()) {
+                    it.copyTo(File(newFeatureDestination, it.name))
+                }
             }
-        }
     }
 
     private fun File.ensureModuleDoesNotExist() {
-        if (exists()) throw GradleException("Feature [${relativeTo(project.rootDir)}] already exists")
+        if (exists()) throw GradleException("Feature [${relativeTo(rootDir.get())}] already exists")
     }
 
     private fun File.createDirectory() {
@@ -97,7 +105,7 @@ abstract class ModuleCreator : DefaultTask() {
             }
     }
 
-    private fun getExampleDir(): File = File(project.rootDir, EXAMPLE_FEATURE_NAME)
+    private fun getExampleDir(): File = File(rootDir.get(), EXAMPLE_FEATURE_NAME)
 
     private fun getExampleSubDirectory(type: ModuleType): File {
         val exampleDir = getExampleDir()
